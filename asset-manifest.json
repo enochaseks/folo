@@ -1,25 +1,25 @@
 {
   "files": {
-    "main.css": "/folo/static/css/main.a0a0ec12.css",
-    "main.js": "/folo/static/js/main.7f963561.js",
-    "static/js/453.510f2438.chunk.js": "/folo/static/js/453.510f2438.chunk.js",
-    "static/media/banner1.mp4": "/folo/static/media/banner1.a3fda4cb547b6e32bc87.mp4",
-    "static/media/banner2.mp4": "/folo/static/media/banner2.037a7532d78f37fe36cd.mp4",
-    "static/media/banner6.jpg": "/folo/static/media/banner6.45c3cc306e673702b318.jpg",
-    "static/media/bg3.jpg": "/folo/static/media/bg3.e596f25af7d8f40efa22.jpg",
-    "static/media/banner5.jpeg": "/folo/static/media/banner5.c0e5c4f9c1d0083b3849.jpeg",
-    "static/media/banner4.jpg": "/folo/static/media/banner4.2fec58f75a29f73b9f7f.jpg",
-    "static/media/logo.png": "/folo/static/media/logo.e17363d2778c44115b7a.png",
-    "static/media/bg2.jpg": "/folo/static/media/bg2.29d74962a22cfca4feb8.jpg",
-    "static/media/bg1.jpg": "/folo/static/media/bg1.96678c6cde4c53e68e06.jpg",
-    "static/media/groceries-health.png": "/folo/static/media/groceries-health.7d3ba951ea0059a35e37.png",
-    "index.html": "/folo/index.html",
-    "main.a0a0ec12.css.map": "/folo/static/css/main.a0a0ec12.css.map",
-    "main.7f963561.js.map": "/folo/static/js/main.7f963561.js.map",
-    "453.510f2438.chunk.js.map": "/folo/static/js/453.510f2438.chunk.js.map"
+    "main.css": "/static/css/main.294c9723.css",
+    "main.js": "/static/js/main.e99ac3b7.js",
+    "static/js/453.510f2438.chunk.js": "/static/js/453.510f2438.chunk.js",
+    "static/media/banner1.mp4": "/static/media/banner1.a3fda4cb547b6e32bc87.mp4",
+    "static/media/banner2.mp4": "/static/media/banner2.037a7532d78f37fe36cd.mp4",
+    "static/media/banner6.jpg": "/static/media/banner6.45c3cc306e673702b318.jpg",
+    "static/media/bg3.jpg": "/static/media/bg3.e596f25af7d8f40efa22.jpg",
+    "static/media/banner5.jpeg": "/static/media/banner5.c0e5c4f9c1d0083b3849.jpeg",
+    "static/media/banner4.jpg": "/static/media/banner4.2fec58f75a29f73b9f7f.jpg",
+    "static/media/logo.png": "/static/media/logo.e17363d2778c44115b7a.png",
+    "static/media/bg2.jpg": "/static/media/bg2.29d74962a22cfca4feb8.jpg",
+    "static/media/bg1.jpg": "/static/media/bg1.96678c6cde4c53e68e06.jpg",
+    "static/media/groceries-health.png": "/static/media/groceries-health.7d3ba951ea0059a35e37.png",
+    "index.html": "/index.html",
+    "main.294c9723.css.map": "/static/css/main.294c9723.css.map",
+    "main.e99ac3b7.js.map": "/static/js/main.e99ac3b7.js.map",
+    "453.510f2438.chunk.js.map": "/static/js/453.510f2438.chunk.js.map"
   },
   "entrypoints": [
-    "static/css/main.a0a0ec12.css",
-    "static/js/main.7f963561.js"
+    "static/css/main.294c9723.css",
+    "static/js/main.e99ac3b7.js"
   ]
 }
