@@ -1,7 +1,7 @@
 {
   "files": {
     "main.css": "/static/css/main.ad7fe40b.css",
-    "main.js": "/static/js/main.b5f60749.js",
+    "main.js": "/static/js/main.394bdb12.js",
     "static/js/453.510f2438.chunk.js": "/static/js/453.510f2438.chunk.js",
     "static/js/759.d1a2632e.js": "/static/js/759.d1a2632e.js",
     "static/media/banner1.mp4": "/static/media/banner1.a3fda4cb547b6e32bc87.mp4",
@@ -17,13 +17,13 @@
     "static/media/groceries-health.png": "/static/media/groceries-health.7d3ba951ea0059a35e37.png",
     "index.html": "/index.html",
     "main.ad7fe40b.css.map": "/static/css/main.ad7fe40b.css.map",
-    "main.b5f60749.js.map": "/static/js/main.b5f60749.js.map",
+    "main.394bdb12.js.map": "/static/js/main.394bdb12.js.map",
     "453.510f2438.chunk.js.map": "/static/js/453.510f2438.chunk.js.map",
     "759.d1a2632e.js.map": "/static/js/759.d1a2632e.js.map"
   },
   "entrypoints": [
     "static/js/759.d1a2632e.js",
     "static/css/main.ad7fe40b.css",
-    "static/js/main.b5f60749.js"
+    "static/js/main.394bdb12.js"
   ]
 }
