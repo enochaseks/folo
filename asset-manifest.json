@@ -1,9 +1,9 @@
 {
   "files": {
-    "main.css": "/static/css/main.5a69311c.css",
-    "main.js": "/static/js/main.c1d72391.js",
+    "main.css": "/static/css/main.ad7fe40b.css",
+    "main.js": "/static/js/main.b5f60749.js",
     "static/js/453.510f2438.chunk.js": "/static/js/453.510f2438.chunk.js",
-    "static/js/618.5d1f522f.js": "/static/js/618.5d1f522f.js",
+    "static/js/759.d1a2632e.js": "/static/js/759.d1a2632e.js",
     "static/media/banner1.mp4": "/static/media/banner1.a3fda4cb547b6e32bc87.mp4",
     "static/media/banner2.mp4": "/static/media/banner2.037a7532d78f37fe36cd.mp4",
     "static/media/OneEyedReview.png": "/static/media/OneEyedReview.84df255fd49cb7868dee.png",
@@ -16,14 +16,14 @@
     "static/media/bg1.jpg": "/static/media/bg1.96678c6cde4c53e68e06.jpg",
     "static/media/groceries-health.png": "/static/media/groceries-health.7d3ba951ea0059a35e37.png",
     "index.html": "/index.html",
-    "main.5a69311c.css.map": "/static/css/main.5a69311c.css.map",
-    "main.c1d72391.js.map": "/static/js/main.c1d72391.js.map",
+    "main.ad7fe40b.css.map": "/static/css/main.ad7fe40b.css.map",
+    "main.b5f60749.js.map": "/static/js/main.b5f60749.js.map",
     "453.510f2438.chunk.js.map": "/static/js/453.510f2438.chunk.js.map",
-    "618.5d1f522f.js.map": "/static/js/618.5d1f522f.js.map"
+    "759.d1a2632e.js.map": "/static/js/759.d1a2632e.js.map"
   },
   "entrypoints": [
-    "static/js/618.5d1f522f.js",
-    "static/css/main.5a69311c.css",
-    "static/js/main.c1d72391.js"
+    "static/js/759.d1a2632e.js",
+    "static/css/main.ad7fe40b.css",
+    "static/js/main.b5f60749.js"
   ]
 }
