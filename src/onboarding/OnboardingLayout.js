@@ -1,5 +1,6 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
+import PropTypes from "prop-types";
 import logo from "../images/logo.png";
 import "../styles/global.css";
 import "../styles/AuthStyles.css";
@@ -38,6 +39,12 @@ const OnboardingLayout = ({ children, currentStep, totalSteps }) => {
       </div>
     </div>
   );
+};
+
+OnboardingLayout.propTypes = {
+  children: PropTypes.node.isRequired,
+  currentStep: PropTypes.number.isRequired,
+  totalSteps: PropTypes.number.isRequired
 };
 
 export default OnboardingLayout;

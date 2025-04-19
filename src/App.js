@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useContext } from "react";
-import { Routes, Route, useNavigate } from "react-router-dom"; // Removed Router import
+import { Routes, Route, useNavigate, Navigate } from "react-router-dom";
 import { AuthProvider, AuthContext } from "./AuthContext";
 import Navbar from "./components/navbar";
 import ConfirmSubscription from "./pages/ConfirmSubscription";
@@ -27,6 +27,14 @@ import Footer from "./components/footer";
 import ServiceList from "./components/servicelist";
 import { ServicesProvider } from "./components/ServicesContext";
 import PropTypes from "prop-types";
+import AgeVerification from "./onboarding/AgeVerification";
+import UserType from "./onboarding/UserType";
+import SellerDetails from "./onboarding/SellerDetails";
+import SellerBusiness from "./onboarding/SellerBusiness";
+import OnboardingComplete from "./onboarding/OnboardingComplete";
+import AgeVerificationCallback from './onboarding/AgeVerificationCallback';
+import SetupBusinessID from "./onboarding/SetupBusinessID";
+import VerifyBusinessID from "./onboarding/VerifyBusinessID";
 
 // Import available icons
 import groceriesHealthIcon from "./icons/groceries-health.png";
@@ -54,6 +62,24 @@ const ServiceManagementWrapper = ({ addService, onDeleteService }) => {
 ServiceManagementWrapper.propTypes = {
   addService: PropTypes.func.isRequired,
   onDeleteService: PropTypes.func.isRequired,
+};
+
+const PublicRoute = ({ children }) => {
+  const { user, isAuthenticating } = useContext(AuthContext);
+
+  if (isAuthenticating) {
+    return <div>Loading...</div>;
+  }
+
+  if (user && user.emailVerified) {
+    return <Navigate to="/profile" replace />;
+  }
+
+  return children;
+};
+
+PublicRoute.propTypes = {
+  children: PropTypes.node.isRequired,
 };
 
 function App() {
@@ -148,81 +174,95 @@ function App() {
   return (
     <ServicesProvider>
       <AuthProvider>
-        {/* Removed Router wrapper since it's now in index.js */}
         <Navbar />
         <Routes>
-          <Route
-            path="/"
-            element={<Home services={services} addService={addService} />}
-          />
+          {/* Public Routes */}
+          <Route path="/" element={<Home services={services} addService={addService} />} />
+          <Route path="/confirm-subscription/:token" element={<ConfirmSubscription />} />
+          <Route path="/newsletter" element={<NewsletterPage />} />
+          <Route path="/about" element={<About />} />
+          <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+          <Route path="/terms-of-service" element={<TermsOfService />} />
+          <Route path="/cookie-policy" element={<CookiePolicy />} />
+          
+          {/* Business Setup Route */}
           <Route
             path="/setup-business/:category"
             element={
               <BusinessSetup services={services} setServices={setServices} />
             }
           />
-          <Route path="/confirm-subscription/:token" element={<ConfirmSubscription />} />
-          <Route path="/newsletter" element={<NewsletterPage />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/signup" element={<SignUp />} />
-          <Route path="/settings" element={<Settings />} />
-          <Route path="/about" element={<About />} />
+          
+          {/* Authentication Routes */}
           <Route
-            path="/servicelist"
-            element={<ServiceList categories={categories} />}
-          />
-          <Route
-            path="/category/:categoryName"
-            element={<CategoryDetails services={services} />}
-          />
-          <Route
-            path="/service/:id"
+            path="/login"
             element={
-              <ServiceDetails
-                services={services}
-                onDeleteService={deleteService}
-                onEditService={updateService}
-              />
+              <PublicRoute>
+                <Login />
+              </PublicRoute>
             }
           />
-          <Route path="/one-eyed-review" element={<OneEyedReview />} />
           <Route
-            path="/edit-service/:id"
+            path="/signup"
             element={
+              <PublicRoute>
+                <SignUp />
+              </PublicRoute>
+            }
+          />
+          <Route path="/confirm-email" element={<ConfirmEmail />} />
+
+          {/* Onboarding Routes - Protected */}
+          <Route element={<ProtectedRoute />}>
+            <Route path="/onboarding/age-verification" element={<AgeVerification />} />
+            <Route path="/onboarding/user-type" element={<UserType />} />
+            <Route path="/onboarding/seller-details" element={<SellerDetails />} />
+            <Route path="/onboarding/setup-business-id" element={<SetupBusinessID />} />
+            <Route path="/onboarding/verify-business-id" element={<VerifyBusinessID />} />
+            <Route path="/onboarding/seller-business" element={<SellerBusiness />} />
+            <Route path="/onboarding/complete" element={<OnboardingComplete />} />
+          </Route>
+          <Route path="/onboarding/age-verification/callback" element={<AgeVerificationCallback />} />
+
+          {/* Protected Routes */}
+          <Route element={<ProtectedRoute />}>
+            <Route path="/profile" element={
+              <Profile
+                services={services}
+                addService={addService}
+                deletedServices={deletedServices}
+                restoreService={restoreService}
+                permanentlyDeleteService={permanentlyDeleteService}
+                deleteService={deleteService}
+              />
+            } />
+            <Route path="/settings" element={<Settings />} />
+            <Route path="/manage-services" element={
+              <ServiceManagementWrapper
+                addService={addService}
+                onDeleteService={deleteService}
+              />
+            } />
+            <Route path="/create-service" element={<CategorySelection />} />
+            <Route path="/edit-service/:id" element={
               <EditService
                 services={services}
                 onUpdateService={updateService}
               />
-            }
-          />
-          <Route path="/confirm-email" element={<ConfirmEmail />} />
-          <Route element={<ProtectedRoute />}>
-            <Route
-              path="/profile"
-              element={
-                <Profile
-                  services={services}
-                  addService={addService}
-                  deletedServices={deletedServices}
-                  restoreService={restoreService}
-                  permanentlyDeleteService={permanentlyDeleteService}
-                />
-              }
-            />
-            <Route
-              path="/manage-services"
-              element={
-                <ServiceManagementWrapper
-                  addService={addService}
-                  onDeleteService={deleteService}
-                />
-              }
-            />
+            } />
           </Route>
-          <Route path="/privacy-policy" element={<PrivacyPolicy />} />
-          <Route path="/terms-of-service" element={<TermsOfService />} />
-          <Route path="/cookie-policy" element={<CookiePolicy />} />
-          <Route path="/create-service" element={<CategorySelection />} />
+
+          {/* Service Routes - Public */}
+          <Route path="/servicelist" element={<ServiceList categories={categories} />} />
+          <Route path="/category/:categoryName" element={<CategoryDetails services={services} />} />
+          <Route path="/service/:id" element={
+            <ServiceDetails
+              services={services}
+              onDeleteService={deleteService}
+              onEditService={updateService}
+            />
+          } />
+          <Route path="/one-eyed-review" element={<OneEyedReview />} />
         </Routes>
         <Footer />
       </AuthProvider>

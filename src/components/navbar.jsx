@@ -1,14 +1,15 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useContext } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { FaUser, FaHome, FaEye } from "react-icons/fa";
 import { useTranslation } from "react-i18next";
+import { AuthContext } from "../AuthContext";
 import bannerVideo1 from "../videos/banner1.mp4";
 import bannerVideo2 from "../videos/banner2.mp4";
 
 const Navbar = () => {
   const location = useLocation();
   const { t } = useTranslation();
-  const isAuthenticated = !!localStorage.getItem("token");
+  const { user, isAuthenticating } = useContext(AuthContext);
   const [currentSlide, setCurrentSlide] = useState(0);
   const videoRefs = useRef([]);
 
@@ -100,7 +101,7 @@ const Navbar = () => {
         position: "sticky",
         top: shouldShowBanner ? "250px" : "0",
         '@media (max-width: 768px)': {
-          top: shouldShowBanner ? "150px" : "0" // Matches mobile banner height
+          top: shouldShowBanner ? "150px" : "0"
         },
         zIndex: 100
       }}>
@@ -127,38 +128,40 @@ const Navbar = () => {
             <FaEye size={20} />
           </Link>
 
-          {isAuthenticated ? (
-            <Link to="/profile" style={{ 
-              color: "white", 
-              textDecoration: "none",
-              display: "flex",
-              alignItems: "center",
-              gap: "8px"
-            }}>
-              <FaUser size={20} />
-            </Link>
-          ) : (
-            <>
-              <Link to="/login" style={{ 
+          {!isAuthenticating && (
+            user ? (
+              <Link to="/profile" style={{ 
                 color: "white", 
                 textDecoration: "none",
-                padding: "8px 12px",
-                borderRadius: "5px",
-                transition: "background-color 0.3s ease"
+                display: "flex",
+                alignItems: "center",
+                gap: "8px"
               }}>
-                {t("login")}
+                <FaUser size={20} />
               </Link>
-              <Link to="/signup" style={{ 
-                color: "white", 
-                textDecoration: "none",
-                padding: "8px 12px",
-                borderRadius: "5px",
-                backgroundColor: "rgba(255,255,255,0.2)",
-                transition: "background-color 0.3s ease"
-              }}>
-                {t("signup")}
-              </Link>
-            </>
+            ) : (
+              <>
+                <Link to="/login" style={{ 
+                  color: "white", 
+                  textDecoration: "none",
+                  padding: "8px 12px",
+                  borderRadius: "5px",
+                  transition: "background-color 0.3s ease"
+                }}>
+                  {t("login")}
+                </Link>
+                <Link to="/signup" style={{ 
+                  color: "white", 
+                  textDecoration: "none",
+                  padding: "8px 12px",
+                  borderRadius: "5px",
+                  backgroundColor: "rgba(255,255,255,0.2)",
+                  transition: "background-color 0.3s ease"
+                }}>
+                  {t("signup")}
+                </Link>
+              </>
+            )
           )}
         </div>
       </nav>

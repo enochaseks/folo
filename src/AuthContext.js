@@ -1,5 +1,5 @@
-import React, { createContext, useState, useEffect, useCallback } from "react";
-import axios from "axios";
+import React, { createContext, useState, useEffect } from "react";
+import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged } from 'firebase/auth';
 import PropTypes from "prop-types";
 
 export const AuthContext = createContext();
@@ -7,157 +7,70 @@ export const AuthContext = createContext();
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [isAuthenticating, setIsAuthenticating] = useState(true);
+  const auth = getAuth();
 
   // Check authentication status on initial load
   useEffect(() => {
-    const checkAuth = async () => {
-      try {
-        const token = localStorage.getItem("token");
-        const refreshToken = localStorage.getItem("refreshToken");
-        const userData = JSON.parse(localStorage.getItem("userData"));
-
-        if (token && userData) {
-          // Verify token is still valid
-          setUser({
-            token,
-            refreshToken,
-            ...userData,
-          });
-        } else if (refreshToken) {
-          // Try to refresh token if access token is missing but refresh token exists
-          await refreshAuth();
-        }
-      } catch (error) {
-        console.error("Auth check error:", error);
-        logout();
-      } finally {
-        setIsAuthenticating(false);
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      if (user) {
+        setUser(user);
+      } else {
+        setUser(null);
       }
-    };
-    checkAuth();
-  }, []);
+      setIsAuthenticating(false);
+    });
 
-  const refreshAuth = useCallback(async () => {
+    return () => unsubscribe();
+  }, [auth]);
+
+  const login = async (email, password) => {
     try {
-      const refreshToken = localStorage.getItem("refreshToken");
-      if (!refreshToken) throw new Error("No refresh token available");
-  
-      const response = await axios.post(
-        `${process.env.REACT_APP_BACKEND_URL}/api/refresh-token`,
-        { refreshToken }
-      );
-  
-      const { token, refreshToken: newRefreshToken, user: userData } = response.data;
-  
-      localStorage.setItem("token", token);
-      localStorage.setItem("refreshToken", newRefreshToken);
-      localStorage.setItem("userData", JSON.stringify(userData));
-  
-      setUser({
-        token,
-        refreshToken: newRefreshToken,
-        ...userData,
-      });
-  
-      return { success: true };
-    } catch (error) {
-      console.error("Token refresh error:", error);
-      logout();
-      return { success: false, error: error.message };
-    }
-  }, []);
-
-  const login = async (email) => {
-    try {
-      const response = await axios.post(
-        `${process.env.REACT_APP_BACKEND_URL}/api/auth/login`,
-        { email }
-      );
-
-      const { token, refreshToken, user: userData } = response.data;
-
-      localStorage.setItem("token", token);
-      localStorage.setItem("refreshToken", refreshToken);
-      localStorage.setItem("userData", JSON.stringify(userData));
-
-      setUser({
-        token,
-        refreshToken,
-        ...userData,
-      });
-
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      setUser(userCredential.user);
       return { success: true };
     } catch (error) {
       console.error("Login error:", error);
       return { 
         success: false, 
-        error: error.response?.data?.message || "Login failed" 
+        error: error.message 
       };
     }
   };
 
-  const signup = async (email) => {
+  const signup = async (email, password) => {
     try {
-      const response = await axios.post(
-        `${process.env.REACT_APP_BACKEND_URL}/api/auth/signup`,
-        { email }
-      );
-
-      const { token, refreshToken, user: userData } = response.data;
-
-      localStorage.setItem("token", token);
-      localStorage.setItem("refreshToken", refreshToken);
-      localStorage.setItem("userData", JSON.stringify(userData));
-
-      setUser({
-        token,
-        refreshToken,
-        ...userData,
-      });
-
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      setUser(userCredential.user);
       return { success: true };
     } catch (error) {
       console.error("Signup error:", error);
       return { 
         success: false, 
-        error: error.response?.data?.message || "Signup failed" 
+        error: error.message 
       };
     }
   };
 
-  const logout = () => {
-    localStorage.removeItem("token");
-    localStorage.removeItem("refreshToken");
-    localStorage.removeItem("userData");
-    setUser(null);
+  const logout = async () => {
+    try {
+      await signOut(auth);
+      setUser(null);
+    } catch (error) {
+      console.error("Logout error:", error);
+    }
   };
 
   const deleteAccount = async () => {
     try {
-      await axios.delete(
-        `${process.env.REACT_APP_BACKEND_URL}/api/auth/delete-account`,
-        {
-          headers: {
-            Authorization: `Bearer ${user.token}`,
-          },
-        }
-      );
-      logout();
+      await user.delete();
+      setUser(null);
       return { success: true };
     } catch (error) {
       console.error("Delete account error:", error);
       return { 
         success: false, 
-        error: error.response?.data?.message || "Failed to delete account" 
+        error: error.message 
       };
-    }
-  };
-
-  const updateRole = (newRole) => {
-    if (user) {
-      const updatedUser = { ...user, role: newRole };
-      setUser(updatedUser);
-      localStorage.setItem("userData", JSON.stringify(updatedUser));
     }
   };
 
@@ -167,9 +80,7 @@ export const AuthProvider = ({ children }) => {
     login,
     signup,
     logout,
-    deleteAccount,
-    updateRole,
-    refreshAuth,
+    deleteAccount
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

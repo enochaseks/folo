@@ -1,6 +1,9 @@
 import React, { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import OnboardingLayout from "./OnboardingLayout";
+import { auth } from "../pages/firebase";
+import { updateDoc, doc } from "firebase/firestore";
+import { db } from "../pages/firebase";
 
 const SellerBusiness = () => {
   const navigate = useNavigate();
@@ -11,6 +14,7 @@ const SellerBusiness = () => {
     productTypes: []
   });
   const [error, setError] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
 
   const productOptions = [
     "Groceries",
@@ -37,29 +41,37 @@ const SellerBusiness = () => {
     }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    
-    if (!formData.businessOrigin || !formData.businessAge) {
-      setError("Please fill in all required fields");
-      return;
+    setIsLoading(true);
+    setError("");
+
+    try {
+      const user = auth.currentUser;
+      if (user) {
+        await updateDoc(doc(db, 'users', user.uid), {
+          ...formData,
+          onboardingStep: 'complete',
+          onboardingComplete: true,
+          lastUpdated: new Date().toISOString()
+        });
+      }
+      
+      navigate("/onboarding/complete", { 
+        state: { 
+          ...location.state,
+          ...formData
+        } 
+      });
+    } catch (error) {
+      setError(error.message);
+    } finally {
+      setIsLoading(false);
     }
-    
-    if (formData.productTypes.length === 0) {
-      setError("Please select at least one product type");
-      return;
-    }
-    
-    navigate("/onboarding/complete", { 
-      state: { 
-        ...location.state,
-        businessDetails: formData 
-      } 
-    });
   };
 
   return (
-    <OnboardingLayout currentStep={4} totalSteps={5}>
+    <OnboardingLayout currentStep={6} totalSteps={7}>
       <form onSubmit={handleSubmit} className="onboarding-form">
         <h2>More about your business</h2>
         <p>This helps us connect you with the right customers.</p>
@@ -114,8 +126,8 @@ const SellerBusiness = () => {
         
         {error && <p className="error-message">{error}</p>}
         
-        <button type="submit" className="continue-button">
-          Continue
+        <button type="submit" className="continue-button" disabled={isLoading}>
+          {isLoading ? "Submitting..." : "Continue"}
         </button>
       </form>
     </OnboardingLayout>

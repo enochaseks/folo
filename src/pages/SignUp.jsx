@@ -3,18 +3,36 @@ import { useNavigate, Link, useLocation } from "react-router-dom";
 import '../styles/AuthStyles.css';
 import '../styles/global.css';
 import logo from '../images/logo.png';
-import { FaGoogle, FaFacebook } from "react-icons/fa";
-import { FacebookAuthProvider, signInWithPopup } from "firebase/auth";
-import axios from "axios";
-import { auth, googleProvider, sendEmailLink, isEmailLink, completeEmailSignIn } from './firebase';
+import { FaGoogle, FaFacebook, FaEye, FaEyeSlash } from "react-icons/fa";
+import { 
+  FacebookAuthProvider, 
+  signInWithPopup, 
+  sendEmailVerification 
+} from "firebase/auth";
+import axios from 'axios';
+import { 
+  auth, 
+  googleProvider, 
+  isEmailLink, 
+  completeEmailSignIn, 
+  db,
+  createUserWithPassword,
+  validatePassword,
+  actionCodeSettings
+} from './firebase';
+import { doc, setDoc } from 'firebase/firestore';
 
 const SignUp = () => {
   const [formData, setFormData] = useState({
     email: "",
     name: "",
+    password: "",
+    confirmPassword: "",
     role: "buyer"
   });
 
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -53,9 +71,35 @@ const SignUp = () => {
         );
         
         if (response.data.success) {
-          localStorage.setItem("token", response.data.token);
-          localStorage.setItem("refreshToken", response.data.refreshToken);
-          navigate("/onboarding/age-verification");
+          try {
+            // Store user data in Firestore
+            const userData = {
+              email: email,
+              name: formData.name,
+              role: formData.role,
+              createdAt: new Date().toISOString(),
+              lastLogin: new Date().toISOString(),
+              emailVerified: false,
+              onboardingCompleted: false,
+              onboardingStep: 'age-verification'
+            };
+
+            if (db) {
+              await setDoc(doc(db, 'users', result.user.uid), userData);
+            } else {
+              console.warn('Firestore not initialized, skipping user data storage');
+            }
+
+            localStorage.setItem("token", response.data.token);
+            localStorage.setItem("refreshToken", response.data.refreshToken);
+            navigate("/onboarding/age-verification");
+          } catch (firestoreError) {
+            console.error('Error storing user data:', firestoreError);
+            // Continue with the flow even if Firestore storage fails
+            localStorage.setItem("token", response.data.token);
+            localStorage.setItem("refreshToken", response.data.refreshToken);
+            navigate("/onboarding/age-verification");
+          }
         }
       } else {
         throw new Error(result.error);
@@ -83,19 +127,67 @@ const SignUp = () => {
     setMessage("");
     
     try {
-      if (!formData.email || !formData.name) {
+      if (!formData.email || !formData.name || !formData.password || !formData.confirmPassword) {
         throw new Error("Please fill in all fields");
       }
 
-      const result = await sendEmailLink(formData.email);
+      if (formData.password !== formData.confirmPassword) {
+        throw new Error("Passwords do not match");
+      }
+
+      const passwordValidation = validatePassword(formData.password);
+      if (!passwordValidation.valid) {
+        throw new Error(passwordValidation.error);
+      }
+
+      const result = await createUserWithPassword(formData.email, formData.password);
       
       if (result.success) {
-        setMessage("Check your email for the sign up link!");
+        try {
+          // Send email verification
+          await sendEmailVerification(result.user, actionCodeSettings);
+          
+          // Store user data in Firestore
+          const userData = {
+            email: formData.email,
+            name: formData.name,
+            role: formData.role,
+            createdAt: new Date().toISOString(),
+            lastLogin: new Date().toISOString(),
+            emailVerified: false,
+            onboardingCompleted: false,
+            onboardingStep: 'age-verification'
+          };
+
+          if (db) {
+            await setDoc(doc(db, 'users', result.user.uid), userData);
+            setMessage("Account created successfully! Please check your email to verify your account. Once verified, you can log in to continue.");
+            // Sign out the user after account creation
+            await auth.signOut();
+            // Clear form data
+            setFormData({
+              email: "",
+              name: "",
+              password: "",
+              confirmPassword: "",
+              role: "buyer"
+            });
+            // Do not navigate anywhere - stay on signup page
+            return;
+          } else {
+            throw new Error("Database not initialized");
+          }
+        } catch (error) {
+          console.error('Error during signup:', error);
+          // If Firestore write fails, delete the user account
+          await result.user.delete();
+          throw new Error("Failed to create account. Please try again.");
+        }
       } else {
         throw new Error(result.error);
       }
     } catch (error) {
-      setError(error.message || "Failed to send sign up link. Please try again.");
+      setError(error.message || "Failed to create account. Please try again.");
     } finally {
       setIsLoading(false);
     }
@@ -169,6 +261,59 @@ const SignUp = () => {
                 required
               />
             </div>
+
+            <div className="form-group">
+              <label>Password:</label>
+              <div className="password-input-container">
+                <input
+                  type={showPassword ? "text" : "password"}
+                  name="password"
+                  value={formData.password}
+                  onChange={handleChange}
+                  required
+                  minLength={8}
+                />
+                <button
+                  type="button"
+                  className="password-toggle"
+                  onClick={() => setShowPassword(!showPassword)}
+                >
+                  {showPassword ? <FaEyeSlash /> : <FaEye />}
+                </button>
+              </div>
+              <p className="password-requirements">
+                Password must be at least 8 characters long and contain:
+                <br />
+                • One uppercase letter
+                <br />
+                • One lowercase letter
+                <br />
+                • One number
+                <br />
+                • One special character
+              </p>
+            </div>
+
+            <div className="form-group">
+              <label>Confirm Password:</label>
+              <div className="password-input-container">
+                <input
+                  type={showConfirmPassword ? "text" : "password"}
+                  name="confirmPassword"
+                  value={formData.confirmPassword}
+                  onChange={handleChange}
+                  required
+                  minLength={8}
+                />
+                <button
+                  type="button"
+                  className="password-toggle"
+                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                >
+                  {showConfirmPassword ? <FaEyeSlash /> : <FaEye />}
+                </button>
+              </div>
+            </div>
             
             <div className="form-group">
               <label>I want to:</label>
@@ -184,7 +329,7 @@ const SignUp = () => {
             </div>
             
             <button type="submit" className="auth-button" disabled={isLoading}>
-              {isLoading ? "Sending..." : "Send Sign Up Link"}
+              {isLoading ? "Creating Account..." : "Create Account"}
             </button>
           </form>
           

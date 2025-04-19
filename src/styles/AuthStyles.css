@@ -229,3 +229,66 @@
   color: #ccc;
   cursor: not-allowed;
 }
+
+.password-input-container {
+  position: relative;
+  width: 100%;
+}
+
+.password-input-container input {
+  width: 100%;
+  padding-right: 40px;
+}
+
+.password-toggle {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  color: #666;
+  cursor: pointer;
+  padding: 5px;
+}
+
+.password-toggle:hover {
+  color: #333;
+}
+
+.password-requirements {
+  font-size: 0.8rem;
+  color: #666;
+  margin-top: 5px;
+  text-align: left;
+}
+
+.forgot-password {
+  background: none;
+  border: none;
+  color: #007bff;
+  cursor: pointer;
+  font-size: 0.9rem;
+  padding: 5px 0;
+  text-align: right;
+  width: 100%;
+}
+
+.forgot-password:hover {
+  text-decoration: underline;
+}
+
+.auth-toggle {
+  background: none;
+  border: none;
+  color: #007bff;
+  cursor: pointer;
+  font-size: 0.9rem;
+  margin: 10px 0;
+  padding: 5px;
+  width: 100%;
+}
+
+.auth-toggle:hover {
+  text-decoration: underline;
+}

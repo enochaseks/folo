@@ -4,23 +4,20 @@ import { AuthContext } from "../AuthContext";
 import { useNavigate } from "react-router-dom";
 import "../styles/global.css";
 import { Link } from "react-router-dom";
+import { doc, getDoc, updateDoc } from "firebase/firestore";
+import { db } from "./firebase";
 
 const Profile = ({ services, addService, deletedServices, restoreService, permanentlyDeleteService, deleteService }) => {
-  const { user, logout, updateRole, authAxios } = useContext(AuthContext);
+  const { user, isAuthenticating, logout } = useContext(AuthContext);
   const navigate = useNavigate();
   const [profile, setProfile] = useState({
     firstName: user?.name?.split(" ")[0] || "",
     lastName: user?.name?.split(" ")[1] || "",
-    mobileNumber: "+44 7888 227509",
     email: user?.email || "",
-    dateOfBirth: "-",
-    gender: "-",
+    dateOfBirth: "-"
   });
   const [profilePicture, setProfilePicture] = useState(
-    localStorage.getItem("profilePicture") || "https://via.placeholder.com/150x150"
-  );
-  const [backgroundImage, setBackgroundImage] = useState(
-    localStorage.getItem("backgroundImage") || "https://via.placeholder.com/800x200"
+    localStorage.getItem("profilePicture") || "https://placehold.co/150x150/png?text=Profile"
   );
   const [isEditing, setIsEditing] = useState(false);
   const [isSeller, setIsSeller] = useState(user?.role === "seller");
@@ -39,36 +36,102 @@ const Profile = ({ services, addService, deletedServices, restoreService, perman
   }, []);
 
   useEffect(() => {
-    const savedProfileDetails = localStorage.getItem("profileDetails");
-    if (savedProfileDetails) {
-      setProfile(JSON.parse(savedProfileDetails));
-    }
-    const savedRole = localStorage.getItem("userRole");
-    if (savedRole) {
-      setIsSeller(savedRole === "seller");
-    }
-  }, []);
+    const loadUserData = async () => {
+      try {
+        if (user?.uid) {
+          const userDoc = await getDoc(doc(db, 'users', user.uid));
+          const userData = userDoc.data();
+          if (userData) {
+            setProfile({
+              firstName: userData.name?.split(" ")[0] || "",
+              lastName: userData.name?.split(" ")[1] || "",
+              email: userData.email || "",
+              dateOfBirth: userData.dateOfBirth || "-"
+            });
+            setIsSeller(userData.role === "seller");
+            localStorage.setItem("userRole", userData.role);
+          }
+        }
+      } catch (error) {
+        console.error('Failed to load user data:', error);
+      }
+    };
 
-  useEffect(() => {
-    if (user && !user.onboardingComplete) {
-      checkOnboardingStatus();
-    }
+    loadUserData();
   }, [user]);
 
-  const checkOnboardingStatus = async () => {
+  useEffect(() => {
+    if (user) {
+      checkVerificationStatus();
+    }
+  }, [user, navigate]);
+
+  // Redirect if not authenticated
+  useEffect(() => {
+    if (!isAuthenticating && !user) {
+      navigate('/login');
+      return;
+    }
+  }, [user, isAuthenticating, navigate]);
+
+  const checkVerificationStatus = async () => {
     try {
-      const response = await authAxios.get('/api/users/onboarding-status');
-      if (!response.data.data.onboardingComplete) {
-        navigate('/onboarding/age-verification');
+      if (!user?.uid) return;
+      
+      const userDoc = await getDoc(doc(db, 'users', user.uid));
+      const userData = userDoc.data();
+      
+      // For sellers: always require verification on profile access
+      if (userData?.role === 'seller') {
+        if (!userData.businessID) {
+          navigate('/onboarding/setup-business-id');
+          return;
+        }
+        
+        // Get the last verification time
+        const lastVerified = userData.lastVerified ? new Date(userData.lastVerified) : null;
+        const now = new Date();
+        
+        // If never verified or verified more than 1 minute ago, require verification
+        if (!lastVerified || (now - lastVerified) > 60000) {
+          navigate('/onboarding/verify-business-id');
+          return;
+        }
+      }
+
+      // Don't redirect to onboarding if it's complete
+      if (!userData?.onboardingComplete && userData?.onboardingStep) {
+        navigate(`/onboarding/${userData.onboardingStep}`);
       }
     } catch (error) {
-      console.error('Failed to check onboarding status:', error);
+      console.error('Failed to check verification status:', error);
     }
   };
 
-  const handleLogout = () => {
-    logout();
-    navigate("/login");
+  const handleLogout = async () => {
+    try {
+      // Clear all cached data
+      localStorage.clear(); // Clear everything instead of individual items
+      sessionStorage.clear(); // Also clear session storage
+      
+      // Clear specific items if they exist
+      localStorage.removeItem("token");
+      localStorage.removeItem("refreshToken");
+      localStorage.removeItem("profileDetails");
+      localStorage.removeItem("userRole");
+      localStorage.removeItem("profilePicture");
+      localStorage.removeItem("backgroundImage");
+      localStorage.removeItem("emailForSignIn");
+      localStorage.removeItem("onboardingStep");
+      localStorage.removeItem("businessID");
+      localStorage.removeItem("businessIDVerified");
+      localStorage.removeItem("userData");
+      
+      await logout();
+      navigate("/login");
+    } catch (error) {
+      console.error("Logout error:", error);
+    }
   };
 
   const handleProfilePictureChange = (e) => {
@@ -79,19 +142,6 @@ const Profile = ({ services, addService, deletedServices, restoreService, perman
         const newProfilePicture = event.target.result;
         setProfilePicture(newProfilePicture);
         localStorage.setItem("profilePicture", newProfilePicture);
-      };
-      reader.readAsDataURL(file);
-    }
-  };
-
-  const handleBackgroundImageChange = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        const newBackgroundImage = event.target.result;
-        setBackgroundImage(newBackgroundImage);
-        localStorage.setItem("backgroundImage", newBackgroundImage);
       };
       reader.readAsDataURL(file);
     }
@@ -108,24 +158,45 @@ const Profile = ({ services, addService, deletedServices, restoreService, perman
     setIsEditing(!isEditing);
   };
 
-  const handleRoleToggle = () => {
-    const newRole = isSeller ? "buyer" : "seller";
-    setIsSeller(!isSeller);
-    updateRole(newRole);
-    localStorage.setItem("userRole", newRole);
+  const handleRoleToggle = async () => {
+    try {
+      const newRole = isSeller ? "buyer" : "seller";
+      setIsSeller(!isSeller);
+      
+      // Update role in Firestore
+      if (user?.uid) {
+        await updateDoc(doc(db, 'users', user.uid), {
+          role: newRole,
+          lastUpdated: new Date().toISOString()
+        });
+      }
+      
+      // Update local storage
+      localStorage.setItem("userRole", newRole);
+      
+      // If switching to buyer, navigate to profile
+      if (newRole === "buyer") {
+        navigate('/profile');
+      }
+    } catch (error) {
+      console.error('Failed to update role:', error);
+      // Revert the toggle if update fails
+      setIsSeller(!isSeller);
+    }
   };
 
-  if (!user) {
+  // Don't render anything while checking auth status
+  if (isAuthenticating) {
     return <div>Loading...</div>;
+  }
+
+  // Don't render if not authenticated
+  if (!user) {
+    return null;
   }
 
   return (
     <div className="profile-container">
-      <div className="profile-background">
-        <img src={backgroundImage} alt="Background" className="background-image" />
-        <label htmlFor="background-upload" className="edit-background">Edit Background</label>
-        <input id="background-upload" type="file" accept="image/*" onChange={handleBackgroundImageChange} style={{ display: "none" }} />
-      </div>
       <div className="profile-content">
         <div className="profile-picture-container">
           <img src={profilePicture} alt="Profile" className="profile-picture" />
@@ -184,14 +255,6 @@ const Profile = ({ services, addService, deletedServices, restoreService, perman
             )}
           </p>
           <p>
-            <strong>Mobile Number:</strong>
-            {isEditing ? (
-              <input type="text" name="mobileNumber" value={profile.mobileNumber} onChange={handleInputChange} className="editable-input" />
-            ) : (
-              <span>{profile.mobileNumber}</span>
-            )}
-          </p>
-          <p>
             <strong>Email:</strong>
             {isEditing ? (
               <input type="email" name="email" value={profile.email} onChange={handleInputChange} className="editable-input" />
@@ -205,14 +268,6 @@ const Profile = ({ services, addService, deletedServices, restoreService, perman
               <input type="text" name="dateOfBirth" value={profile.dateOfBirth} onChange={handleInputChange} className="editable-input" />
             ) : (
               <span>{profile.dateOfBirth}</span>
-            )}
-          </p>
-          <p>
-            <strong>Gender:</strong>
-            {isEditing ? (
-              <input type="text" name="gender" value={profile.gender} onChange={handleInputChange} className="editable-input" />
-            ) : (
-              <span>{profile.gender}</span>
             )}
           </p>
         </div>
